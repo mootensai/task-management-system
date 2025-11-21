@@ -41,9 +41,8 @@ class JwtOrBearerAuth extends HttpBearerAuth
             return $identity;
         }
 
-        if ($this->challenge) {
-            $this->challenge($response);
-        }
+        // Authentication failed - handleFailure will throw UnauthorizedHttpException
+        // which automatically triggers the challenge
         $this->handleFailure($response);
         return null;
     }

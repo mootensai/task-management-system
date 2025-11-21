@@ -138,7 +138,13 @@ class TaskController extends Controller
 
         // Handle version for optimistic locking if provided
         if (isset($body['version'])) {
-            $task->version = (int)$body['version'];
+            $requestVersion = (int)$body['version'];
+            $currentVersion = (int)$task->version;
+            
+            // Check if client's version matches current DB version
+            if ($requestVersion !== $currentVersion) {
+                throw new ConflictHttpException('Version conflict while updating task.');
+            }
         }
 
         $task->load($body, '');
@@ -167,7 +173,13 @@ class TaskController extends Controller
         // Handle version for optimistic locking if provided
         $body = Yii::$app->request->bodyParams;
         if (isset($body['version'])) {
-            $task->version = (int)$body['version'];
+            $requestVersion = (int)$body['version'];
+            $currentVersion = (int)$task->version;
+            
+            // Check if client's version matches current DB version
+            if ($requestVersion !== $currentVersion) {
+                throw new ConflictHttpException('Version conflict while deleting task.');
+            }
         }
 
         try {
@@ -189,7 +201,23 @@ class TaskController extends Controller
         // Handle version for optimistic locking if provided in request body
         $body = Yii::$app->request->bodyParams;
         if (isset($body['version'])) {
-            $task->version = (int)$body['version'];
+            $requestVersion = (int)$body['version'];
+            $currentVersion = (int)$task->version;
+            
+            // Check if client's version matches current DB version
+            // This is the optimistic lock check - if versions don't match, someone else updated the record
+            if ($requestVersion !== $currentVersion) {
+                throw new ConflictHttpException(
+                    "Version conflict while toggling status. Expected version {$currentVersion}, but got {$requestVersion}."
+                );
+            }
+            
+            // Set oldAttributes to match the request version so OptimisticLockBehavior validates correctly
+            // This ensures that when save() is called, OptimisticLockBehavior sees the version we validated
+            $task->setOldAttribute('version', $requestVersion);
+        } else {
+            // If no version provided, refresh to get latest version to avoid conflicts
+            $task->refresh();
         }
 
         try {
@@ -198,6 +226,7 @@ class TaskController extends Controller
                 return ['errors' => $task->getErrors()];
             }
         } catch (StaleObjectException $e) {
+            // This catch handles any race conditions that might occur between our check and save
             throw new ConflictHttpException('Version conflict while toggling status.');
         }
 
@@ -215,7 +244,13 @@ class TaskController extends Controller
         // Handle version for optimistic locking if provided in request body
         $body = Yii::$app->request->bodyParams;
         if (isset($body['version'])) {
-            $task->version = (int)$body['version'];
+            $requestVersion = (int)$body['version'];
+            $currentVersion = (int)$task->version;
+            
+            // Check if client's version matches current DB version
+            if ($requestVersion !== $currentVersion) {
+                throw new ConflictHttpException('Version conflict while restoring task.');
+            }
         }
 
         try {
