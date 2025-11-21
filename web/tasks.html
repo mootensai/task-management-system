@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .task-card {
+            transition: transform 0.2s;
+        }
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+        }
+        .priority-badge {
+            font-size: 0.75rem;
+        }
+        .filter-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .login-section {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        .deleted-task {
+            opacity: 0.6;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login / Register</h5>
+                    <button type="button" class="btn-close" id="closeLoginModal" style="display: none;"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" id="authTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button">Login</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button">Register</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="login">
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="loginEmail" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="loginPassword" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Login</button>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="register">
+                            <form id="registerForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Name</label>
+                                    <input type="text" class="form-control" id="registerName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="registerEmail" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="registerPassword" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Role</label>
+                                    <select class="form-select" id="registerRole">
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Register</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" style="display: none;">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#"><i class="bi bi-check2-square"></i> Task Manager</a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3" id="userInfo"></span>
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid mt-4">
+            <!-- Filters Section -->
+            <div class="filter-section">
+                <h5 class="mb-3"><i class="bi bi-funnel"></i> Filters</h5>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="filterStatus">
+                            <option value="">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" id="filterPriority">
+                            <option value="">All</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Assigned To</label>
+                        <select class="form-select" id="filterAssignedTo">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Search</label>
+                        <input type="text" class="form-control" id="filterKeyword" placeholder="Search tasks...">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="applyFilters()"><i class="bi bi-search"></i> Apply Filters</button>
+                        <button class="btn btn-secondary" onclick="clearFilters()"><i class="bi bi-x-circle"></i> Clear</button>
+                        <button class="btn btn-info" id="toggleDeletedBtn" onclick="toggleDeletedView()">
+                            <i class="bi bi-trash"></i> <span id="toggleDeletedText">Show Deleted</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Task Button -->
+            <div class="mb-3">
+                <button class="btn btn-success" onclick="showCreateTaskModal()"><i class="bi bi-plus-circle"></i> Create Task</button>
+            </div>
+
+            <!-- Tasks List -->
+            <div id="tasksContainer" class="row g-3">
+                <!-- Tasks will be loaded here -->
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center" id="pagination">
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Task Modal (Create/Edit) -->
+    <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalTitle">Create Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <div class="mb-3">
+                            <label class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="taskTitle" required minlength="5">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="taskStatus">
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Priority</label>
+                                <select class="form-select" id="taskPriority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="taskDueDate">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Assigned To</label>
+                            <select class="form-select" id="taskAssignedTo">
+                                <option value="">Unassigned</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tags</label>
+                            <div id="taskTagsContainer" class="border rounded p-3" style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa;">
+                                <div class="text-muted small">Loading tags...</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTask()">Save Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const API_BASE = window.location.origin;
+        let authToken = localStorage.getItem('authToken') || '';
+        let currentUser = null;
+        let users = [];
+        let currentPage = 1;
+        let showDeleted = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prevent modal from closing if not authenticated
+            const loginModal = document.getElementById('loginModal');
+            loginModal.addEventListener('hide.bs.modal', function(event) {
+                // Only prevent closing if user is not authenticated
+                if (!authToken && !currentUser) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                }
+            });
+
+            // Add Enter key support for search input
+            const searchInput = document.getElementById('filterKeyword');
+            if (searchInput) {
+                searchInput.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' || event.keyCode === 13) {
+                        event.preventDefault();
+                        applyFilters();
+                    }
+                });
+            }
+
+            if (authToken) {
+                checkAuth();
+            } else {
+                showLoginModal();
+            }
+        });
+
+        // Axios interceptor for auth
+        axios.interceptors.request.use(config => {
+            if (authToken) {
+                config.headers.Authorization = `Bearer ${authToken}`;
+            }
+            return config;
+        });
+
+        axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response && error.response.status === 401) {
+                    logout();
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        function showLoginModal() {
+            const modalElement = document.getElementById('loginModal');
+            // Set backdrop and keyboard attributes
+            modalElement.setAttribute('data-bs-backdrop', 'static');
+            modalElement.setAttribute('data-bs-keyboard', 'false');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement, {
+                backdrop: 'static',
+                keyboard: false
+            });
+            // Hide close button when not authenticated
+            document.getElementById('closeLoginModal').style.display = 'none';
+            modal.show();
+        }
+
+        async function checkAuth() {
+            try {
+                const response = await axios.get(`${API_BASE}/api/tasks?pageSize=1`);
+                initApp();
+            } catch (error) {
+                showLoginModal();
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await axios.post(`${API_BASE}/api/auth/login`, {
+                    email,
+                    password
+                });
+
+                authToken = response.data.jwt || response.data.access_token;
+                localStorage.setItem('authToken', authToken);
+                currentUser = response.data.user;
+
+                // Show close button and allow modal to close
+                document.getElementById('closeLoginModal').style.display = 'block';
+                const modalElement = document.getElementById('loginModal');
+                // Update attributes to allow closing
+                modalElement.setAttribute('data-bs-backdrop', 'true');
+                modalElement.setAttribute('data-bs-keyboard', 'true');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    // Update config
+                    modal._config.backdrop = true;
+                    modal._config.keyboard = true;
+                }
+                modal.hide();
+                initApp();
+            } catch (error) {
+                alert('Login failed: ' + (error.response?.data?.error || error.message));
+            }
+        }
+
+        async function register() {
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const role = document.getElementById('registerRole').value;
+
+            try {
+                const response = await axios.post(`${API_BASE}/api/auth/register`, {
+                    name,
+                    email,
+                    password,
+                    role
+                });
+
+                authToken = response.data.jwt || response.data.access_token;
+                localStorage.setItem('authToken', authToken);
+                currentUser = response.data.user;
+
+                // Show close button and allow modal to close
+                document.getElementById('closeLoginModal').style.display = 'block';
+                const modalElement = document.getElementById('loginModal');
+                // Update attributes to allow closing
+                modalElement.setAttribute('data-bs-backdrop', 'true');
+                modalElement.setAttribute('data-bs-keyboard', 'true');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    // Update config
+                    modal._config.backdrop = true;
+                    modal._config.keyboard = true;
+                }
+                modal.hide();
+                initApp();
+            } catch (error) {
+                alert('Registration failed: ' + (error.response?.data?.error || JSON.stringify(error.response?.data?.errors || {})));
+            }
+        }
+
+        function logout() {
+            authToken = '';
+            localStorage.removeItem('authToken');
+            currentUser = null;
+            document.getElementById('app').style.display = 'none';
+            showLoginModal();
+        }
+
+        async function initApp() {
+            document.getElementById('app').style.display = 'block';
+            await Promise.all([loadUsers(), loadTags()]);
+            loadTasks();
+            if (currentUser) {
+                document.getElementById('userInfo').textContent = `${currentUser.name} (${currentUser.role})`;
+            }
+            
+            // Ensure Enter key support for search input (in case it wasn't set up in DOMContentLoaded)
+            const searchInput = document.getElementById('filterKeyword');
+            if (searchInput && !searchInput.hasAttribute('data-enter-listener')) {
+                searchInput.setAttribute('data-enter-listener', 'true');
+                searchInput.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' || event.keyCode === 13) {
+                        event.preventDefault();
+                        applyFilters();
+                    }
+                });
+            }
+        }
+
+        async function loadTags() {
+            try {
+                const response = await axios.get(`${API_BASE}/api/tags`);
+                
+                // Handle different response formats
+                let tags = [];
+                if (Array.isArray(response.data)) {
+                    tags = response.data;
+                } else if (response.data && Array.isArray(response.data.items)) {
+                    tags = response.data.items;
+                } else if (response.data && response.data._meta && Array.isArray(response.data.items)) {
+                    tags = response.data.items;
+                }
+                
+                // Store tags for later use
+                window.tags = tags;
+                console.log(`Loaded ${tags.length} tags from API`);
+            } catch (error) {
+                console.error('Error loading tags:', error);
+                window.tags = [];
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                // Fetch users from API
+                const response = await axios.get(`${API_BASE}/api/users`);
+                
+                // Handle different response formats
+                let users = [];
+                if (Array.isArray(response.data)) {
+                    users = response.data;
+                } else if (response.data && Array.isArray(response.data.items)) {
+                    users = response.data.items;
+                } else if (response.data && response.data._meta && Array.isArray(response.data.items)) {
+                    users = response.data.items;
+                }
+                
+                if (users.length === 0) {
+                    console.warn('No users found in API response:', response.data);
+                    return;
+                }
+                
+                // Store users for later use
+                window.users = users;
+                console.log(`Loaded ${users.length} users from API`);
+                
+                // Populate assigned to dropdowns if they exist
+                const assignedToSelect = document.getElementById('taskAssignedTo');
+                const filterAssignedTo = document.getElementById('filterAssignedTo');
+                
+                if (assignedToSelect) {
+                    // Clear existing options (except first "Unassigned" option)
+                    while (assignedToSelect.options.length > 1) {
+                        assignedToSelect.remove(1);
+                    }
+                    
+                    // Add users to task assignment dropdown
+                    users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id.toString();
+                        option.textContent = `${user.name} (${user.email})`;
+                        assignedToSelect.appendChild(option);
+                    });
+                    console.log(`Populated taskAssignedTo dropdown with ${users.length} users`);
+                }
+                
+                if (filterAssignedTo) {
+                    // Clear existing options (except first "All" option)
+                    while (filterAssignedTo.options.length > 1) {
+                        filterAssignedTo.remove(1);
+                    }
+                    
+                    // Add users to filter dropdown
+                    users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id.toString();
+                        option.textContent = `${user.name} (${user.email})`;
+                        filterAssignedTo.appendChild(option);
+                    });
+                    console.log(`Populated filterAssignedTo dropdown with ${users.length} users`);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                console.error('Error response:', error.response?.data);
+                // Fallback: try to get users from tasks if API fails
+                try {
+                    const taskResponse = await axios.get(`${API_BASE}/api/tasks?pageSize=100`);
+                    const tasks = taskResponse.data.items || [];
+                    const userIds = [...new Set(tasks.map(t => t.assigned_to).filter(Boolean))];
+                    console.log('Fallback: Found user IDs from tasks:', userIds);
+                    // We can't get user names this way, but at least we have IDs
+                } catch (fallbackError) {
+                    console.error('Fallback user loading also failed:', fallbackError);
+                }
+            }
+        }
+
+        async function loadTasks(page = 1) {
+            currentPage = page;
+            showDeleted = false;
+            
+            const status = document.getElementById('filterStatus').value;
+            const priority = document.getElementById('filterPriority').value;
+            const assignedTo = document.getElementById('filterAssignedTo').value;
+            const keyword = document.getElementById('filterKeyword').value;
+
+            const params = {
+                page: page,
+                pageSize: 12
+            };
+
+            if (status) params.status = status;
+            if (priority) params.priority = priority;
+            if (assignedTo) params.assigned_to = assignedTo;
+            if (keyword) params.keyword = keyword;
+
+            try {
+                const response = await axios.get(`${API_BASE}/api/tasks`, { params });
+                displayTasks(response.data);
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                alert('Failed to load tasks: ' + (error.response?.data?.error || error.message));
+            }
+        }
+
+        async function loadDeletedTasks(page = 1) {
+            currentPage = page;
+            showDeleted = true;
+            
+            const status = document.getElementById('filterStatus').value;
+            const priority = document.getElementById('filterPriority').value;
+            const assignedTo = document.getElementById('filterAssignedTo').value;
+            const keyword = document.getElementById('filterKeyword').value;
+
+            const params = {
+                page: page,
+                pageSize: 12,
+                show_deleted: true  // Request deleted tasks
+            };
+
+            if (status) params.status = status;
+            if (priority) params.priority = priority;
+            if (assignedTo) params.assigned_to = assignedTo;
+            if (keyword) params.keyword = keyword;
+
+            try {
+                const response = await axios.get(`${API_BASE}/api/tasks`, { params });
+                displayTasks(response.data);
+            } catch (error) {
+                console.error('Error loading deleted tasks:', error);
+                alert('Failed to load deleted tasks: ' + (error.response?.data?.error || error.message));
+            }
+        }
+
+        function displayTasks(data) {
+            const container = document.getElementById('tasksContainer');
+            container.innerHTML = '';
+
+            // Handle different response formats
+            let tasks = [];
+            let totalCount = 0;
+            let pageSize = 12;
+            let currentPageNum = currentPage;
+
+            if (Array.isArray(data)) {
+                // If data is directly an array
+                tasks = data;
+                totalCount = data.length;
+            } else if (data && Array.isArray(data.items)) {
+                // Standard ActiveDataProvider format with items
+                tasks = data.items;
+                totalCount = data.totalCount || (data._meta && data._meta.totalCount) || data.items.length;
+                pageSize = data.pageSize || (data._meta && data._meta.perPage) || 12;
+                currentPageNum = data.page || (data._meta && data._meta.currentPage) || currentPage;
+            } else if (data && data._meta && Array.isArray(data.items)) {
+                // Yii2 serializer format with _meta
+                tasks = data.items;
+                totalCount = data._meta.totalCount || data.items.length;
+                pageSize = data._meta.perPage || 12;
+                currentPageNum = data._meta.currentPage || currentPage;
+            } else if (data && typeof data === 'object') {
+                // Check if it's a single task object (shouldn't happen for index, but handle it)
+                if (data.id !== undefined && data.title !== undefined) {
+                    tasks = [data];
+                    totalCount = 1;
+                } else {
+                    // Try to find any array property
+                    for (const key in data) {
+                        if (Array.isArray(data[key]) && key !== '_links') {
+                            tasks = data[key];
+                            totalCount = data.totalCount || (data._meta && data._meta.totalCount) || data[key].length;
+                            pageSize = data.pageSize || (data._meta && data._meta.perPage) || 12;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            console.log('Processed tasks:', tasks, 'Total:', totalCount); // Debug log
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="col-12"><div class="alert alert-info">No tasks found.</div></div>';
+                return;
+            }
+
+            tasks.forEach(task => {
+                const card = createTaskCard(task);
+                container.appendChild(card);
+            });
+
+            // Pagination
+            const paginationData = {
+                items: tasks,
+                totalCount: totalCount,
+                pageSize: pageSize,
+                page: currentPageNum
+            };
+            displayPagination(paginationData);
+        }
+
+        function createTaskCard(task) {
+            const col = document.createElement('div');
+            col.className = 'col-md-4';
+            
+            const statusColors = {
+                'pending': 'warning',
+                'in_progress': 'info',
+                'completed': 'success'
+            };
+
+            const priorityColors = {
+                'low': 'secondary',
+                'medium': 'primary',
+                'high': 'danger'
+            };
+
+            const statusColor = statusColors[task.status] || 'secondary';
+            const priorityColor = priorityColors[task.priority] || 'secondary';
+
+            col.innerHTML = `
+                <div class="card task-card h-100 ${task.deleted_at ? 'deleted-task' : ''}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title">${escapeHtml(task.title)}</h5>
+                            <div>
+                                <span class="badge bg-${statusColor} status-badge">${task.status}</span>
+                                <span class="badge bg-${priorityColor} priority-badge ms-1">${task.priority}</span>
+                            </div>
+                        </div>
+                        ${task.description ? `<p class="card-text text-muted small">${escapeHtml(task.description.substring(0, 100))}${task.description.length > 100 ? '...' : ''}</p>` : ''}
+                        <div class="mb-2">
+                            ${task.due_date ? `<small class="text-muted"><i class="bi bi-calendar"></i> Due: ${formatDate(task.due_date)}</small><br>` : ''}
+                            ${task.assignedUser ? `<small class="text-muted"><i class="bi bi-person"></i> ${escapeHtml(task.assignedUser.name)}</small><br>` : ''}
+                            ${task.tags && task.tags.length > 0 ? `
+                                <div class="mt-2">
+                                    <small class="text-muted d-block mb-1"><i class="bi bi-tags"></i> Tags:</small>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        ${task.tags.map(tag => {
+                                            const tagColor = tag.color || '#6c757d';
+                                            return `<span class="badge" style="background-color: ${tagColor}; color: #fff; font-size: 0.7rem;">${escapeHtml(tag.name)}</span>`;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            ${!task.deleted_at ? `
+                                <button class="btn btn-outline-primary" onclick="toggleStatus(${task.id})" title="Toggle Status">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="editTask(${task.id})" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteTask(${task.id})" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            ` : `
+                                <button class="btn btn-outline-success" onclick="restoreTask(${task.id}, ${task.version || 0})" title="Restore">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            return col;
+        }
+
+        function displayPagination(data) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            const totalPages = Math.ceil((data.totalCount || 0) / (data.pageSize || 12));
+            if (totalPages <= 1) return;
+
+            // Previous button
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            const prevFunc = showDeleted ? `loadDeletedTasks(${currentPage - 1})` : `loadTasks(${currentPage - 1})`;
+            prevLi.innerHTML = `<a class="page-link" href="#" onclick="${prevFunc}; return false;">Previous</a>`;
+            pagination.appendChild(prevLi);
+
+            // Page numbers
+            const pageFunc = showDeleted ? 'loadDeletedTasks' : 'loadTasks';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#" onclick="${pageFunc}(${i}); return false;">${i}</a>`;
+                    pagination.appendChild(li);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = '<span class="page-link">...</span>';
+                    pagination.appendChild(li);
+                }
+            }
+
+            // Next button
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            const nextFunc = showDeleted ? `loadDeletedTasks(${currentPage + 1})` : `loadTasks(${currentPage + 1})`;
+            nextLi.innerHTML = `<a class="page-link" href="#" onclick="${nextFunc}; return false;">Next</a>`;
+            pagination.appendChild(nextLi);
+        }
+
+        async function showCreateTaskModal() {
+            // Ensure users and tags are loaded before opening the modal
+            if (!window.users || window.users.length === 0) {
+                await loadUsers();
+            }
+            if (!window.tags || window.tags.length === 0) {
+                await loadTags();
+            }
+            
+            document.getElementById('taskModalTitle').textContent = 'Create Task';
+            document.getElementById('taskId').value = '';
+            
+            const modalElement = document.getElementById('taskModal');
+            const modal = new bootstrap.Modal(modalElement);
+            
+            // Populate dropdown function
+            const populateDropdown = () => {
+                const assignedToSelect = document.getElementById('taskAssignedTo');
+                if (!assignedToSelect) {
+                    console.error('taskAssignedTo dropdown not found');
+                    return;
+                }
+                
+                if (!window.users || window.users.length === 0) {
+                    console.warn('No users available in window.users');
+                    return;
+                }
+                
+                // Clear existing options (except first "Unassigned" option)
+                while (assignedToSelect.options.length > 1) {
+                    assignedToSelect.remove(1);
+                }
+                
+                // Add all users
+                window.users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id.toString();
+                    option.textContent = `${user.name} (${user.email})`;
+                    assignedToSelect.appendChild(option);
+                });
+                
+                // Ensure "Unassigned" is selected
+                assignedToSelect.value = '';
+                console.log(`Populated create task dropdown with ${window.users.length} users`);
+            };
+            
+            // Show modal first, then populate dropdown when it's shown
+            modalElement.addEventListener('shown.bs.modal', function onModalShown() {
+                // Reset form after modal is shown (to avoid clearing populated options)
+                document.getElementById('taskForm').reset();
+                populateDropdown();
+                populateTagsContainer([]); // No tags selected for new task
+                modalElement.removeEventListener('shown.bs.modal', onModalShown);
+            }, { once: true });
+            
+            modal.show();
+            
+            // Also try to populate immediately (in case modal is already in DOM)
+            setTimeout(() => {
+                document.getElementById('taskForm').reset();
+                populateDropdown();
+                populateTagsContainer([]);
+            }, 50);
+        }
+
+        function populateTagsContainer(selectedTagIds = []) {
+            const container = document.getElementById('taskTagsContainer');
+            if (!container) {
+                console.error('taskTagsContainer not found');
+                return;
+            }
+            
+            if (!window.tags || window.tags.length === 0) {
+                container.innerHTML = '<div class="text-muted small">No tags available. Create tags via API first.</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            window.tags.forEach(tag => {
+                const isChecked = selectedTagIds.includes(tag.id);
+                const tagDiv = document.createElement('div');
+                tagDiv.className = 'form-check mb-2';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-check-input';
+                checkbox.id = `tag-${tag.id}`;
+                checkbox.value = tag.id;
+                checkbox.checked = isChecked;
+                
+                const label = document.createElement('label');
+                label.className = 'form-check-label';
+                label.htmlFor = `tag-${tag.id}`;
+                
+                // Create a badge-like label with color if available
+                const badge = document.createElement('span');
+                badge.className = 'badge';
+                badge.style.backgroundColor = tag.color || '#6c757d';
+                badge.style.color = '#fff';
+                badge.textContent = tag.name;
+                label.appendChild(badge);
+                
+                tagDiv.appendChild(checkbox);
+                tagDiv.appendChild(label);
+                container.appendChild(tagDiv);
+            });
+        }
+
+        function getSelectedTagIds() {
+            const checkboxes = document.querySelectorAll('#taskTagsContainer input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => parseInt(cb.value));
+        }
+
+        async function editTask(id) {
+            try {
+                // Ensure users and tags are loaded before opening the modal
+                if (!window.users || window.users.length === 0) {
+                    await loadUsers();
+                }
+                if (!window.tags || window.tags.length === 0) {
+                    await loadTags();
+                }
+
+                const response = await axios.get(`${API_BASE}/api/tasks/${id}`);
+                const task = response.data;
+
+                document.getElementById('taskModalTitle').textContent = 'Edit Task';
+                document.getElementById('taskId').value = task.id;
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDescription').value = task.description || '';
+                document.getElementById('taskStatus').value = task.status;
+                document.getElementById('taskPriority').value = task.priority;
+                document.getElementById('taskDueDate').value = task.due_date || '';
+                
+                // Get selected tag IDs from task
+                const selectedTagIds = task.tags ? task.tags.map(tag => tag.id) : [];
+                
+                const modalElement = document.getElementById('taskModal');
+                const modal = new bootstrap.Modal(modalElement);
+                
+                // Populate dropdown when modal is shown (ensures DOM is ready)
+                const populateDropdown = () => {
+                    const assignedToSelect = document.getElementById('taskAssignedTo');
+                    if (!assignedToSelect) {
+                        console.error('taskAssignedTo dropdown not found');
+                        return;
+                    }
+                    
+                    if (!window.users || window.users.length === 0) {
+                        console.warn('No users available in window.users');
+                        return;
+                    }
+                    
+                    // Clear existing options (except first "Unassigned" option)
+                    while (assignedToSelect.options.length > 1) {
+                        assignedToSelect.remove(1);
+                    }
+                    
+                    // Add all users from window.users
+                    window.users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id.toString();
+                        option.textContent = `${user.name} (${user.email})`;
+                        assignedToSelect.appendChild(option);
+                    });
+                    
+                    console.log(`Populated dropdown with ${window.users.length} users, setting value to ${task.assigned_to || 'empty'}`);
+                    
+                    // Set assigned_to value based on task.assigned_to (not assignedUser)
+                    // This works even if assignedUser is null
+                    if (task.assigned_to) {
+                        const assignedToId = task.assigned_to.toString();
+                        // Check if option exists
+                        const optionExists = Array.from(assignedToSelect.options).some(
+                            opt => opt.value === assignedToId
+                        );
+                        
+                        if (optionExists) {
+                            assignedToSelect.value = assignedToId;
+                            console.log(`Set dropdown value to ${assignedToId}`);
+                        } else {
+                            // If option doesn't exist, add it if we have assignedUser data
+                            if (task.assignedUser) {
+                                const option = document.createElement('option');
+                                option.value = task.assignedUser.id.toString();
+                                option.textContent = `${task.assignedUser.name} (${task.assignedUser.email})`;
+                                assignedToSelect.appendChild(option);
+                                assignedToSelect.value = task.assignedUser.id.toString();
+                                console.log(`Added missing user option: ${task.assignedUser.id}`);
+                            } else {
+                                console.warn(`User ID ${task.assigned_to} not found in users list and no assignedUser data`);
+                                assignedToSelect.value = '';
+                            }
+                        }
+                    } else {
+                        // No assigned user, select "Unassigned"
+                        assignedToSelect.value = '';
+                        console.log('No assigned user, set to empty');
+                    }
+                    
+                    // Populate tags with selected ones
+                    populateTagsContainer(selectedTagIds);
+                };
+                
+                // Show modal first, then populate dropdown when it's shown
+                modalElement.addEventListener('shown.bs.modal', function onModalShown() {
+                    populateDropdown();
+                    modalElement.removeEventListener('shown.bs.modal', onModalShown);
+                }, { once: true });
+                
+                modal.show();
+                
+                // Also try to populate immediately (in case modal is already in DOM)
+                setTimeout(populateDropdown, 50);
+            } catch (error) {
+                alert('Failed to load task: ' + (error.response?.data?.error || error.message));
+            }
+        }
+
+        async function saveTask() {
+            const id = document.getElementById('taskId').value;
+            const assignedToValue = document.getElementById('taskAssignedTo').value;
+            const tagIds = getSelectedTagIds();
+            const data = {
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value,
+                status: document.getElementById('taskStatus').value,
+                priority: document.getElementById('taskPriority').value,
+                due_date: document.getElementById('taskDueDate').value || null,
+                assigned_to: assignedToValue ? parseInt(assignedToValue) : null,
+                tag_ids: tagIds,
+            };
+
+            try {
+                if (id) {
+                    // Fetch current version for optimistic locking (as per Postman collection)
+                    try {
+                        const currentTask = await axios.get(`${API_BASE}/api/tasks/${id}`);
+                        data.version = currentTask.data.version || 0;
+                    } catch (fetchError) {
+                        console.error('Failed to fetch task version:', fetchError);
+                        data.version = 0;
+                    }
+                    await axios.put(`${API_BASE}/api/tasks/${id}`, data, {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } else {
+                    await axios.post(`${API_BASE}/api/tasks`, data, {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                }
+
+                bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+                loadTasks(currentPage);
+            } catch (error) {
+                if (error.response && error.response.status === 409) {
+                    alert('The task was updated by another user. Please refresh and try again.');
+                    if (id) {
+                        await editTask(id);
+                    }
+                } else {
+                    const errors = error.response?.data?.errors || {};
+                    const errorMsg = Object.entries(errors).map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`).join('\n');
+                    alert('Failed to save task:\n' + (errorMsg || error.response?.data?.message || error.response?.data?.error || error.message));
+                }
+            }
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Are you sure you want to delete this task?')) return;
+
+            try {
+                // Fetch current version for optimistic locking (as per Postman collection)
+                let version = 0;
+                try {
+                    const taskResponse = await axios.get(`${API_BASE}/api/tasks/${id}`);
+                    version = taskResponse.data.version || 0;
+                } catch (fetchError) {
+                    console.error('Failed to fetch task version:', fetchError);
+                }
+
+                // DELETE with version in body (as per Postman collection)
+                await axios.delete(`${API_BASE}/api/tasks/${id}`, {
+                    data: {
+                        version: version
+                    },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                // Reload the appropriate view
+                if (showDeleted) {
+                    loadDeletedTasks(currentPage);
+                } else {
+                    loadTasks(currentPage);
+                }
+            } catch (error) {
+                if (error.response && error.response.status === 409) {
+                    alert('The task was updated by another user. Please refresh and try again.');
+                    await loadTasks(currentPage);
+                } else {
+                    alert('Failed to delete task: ' + (error.response?.data?.message || error.response?.data?.error || error.message));
+                }
+            }
+        }
+
+        async function toggleStatus(id) {
+            try {
+                // Fetch current version for optimistic locking (as per Postman collection)
+                let version = 0;
+                try {
+                    const taskResponse = await axios.get(`${API_BASE}/api/tasks/${id}`);
+                    version = taskResponse.data.version || 0;
+                } catch (fetchError) {
+                    console.error('Failed to fetch task version:', fetchError);
+                }
+
+                // PATCH with version in body (as per Postman collection)
+                await axios.patch(`${API_BASE}/api/tasks/${id}/toggle-status`, {
+                    version: version
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                // Reload the appropriate view
+                if (showDeleted) {
+                    loadDeletedTasks(currentPage);
+                } else {
+                    loadTasks(currentPage);
+                }
+            } catch (error) {
+                if (error.response && error.response.status === 409) {
+                    alert('The task was updated by another user. The list has been refreshed. Please try again.');
+                    await loadTasks(currentPage);
+                } else {
+                    alert('Failed to toggle status: ' + (error.response?.data?.message || error.response?.data?.error || error.message));
+                }
+            }
+        }
+
+        async function restoreTask(id, version) {
+            try {
+                // Use provided version (from task card) or try to fetch it
+                let currentVersion = version || 0;
+                
+                // Try to fetch the latest version if we're viewing deleted tasks
+                // Note: For deleted tasks, we can't fetch via normal endpoint, so use provided version
+                if (!showDeleted) {
+                    try {
+                        const taskResponse = await axios.get(`${API_BASE}/api/tasks/${id}`);
+                        currentVersion = taskResponse.data.version || version || 0;
+                    } catch (fetchError) {
+                        // If task is deleted, use provided version
+                        currentVersion = version || 0;
+                    }
+                }
+
+                // PATCH with version in body (as per Postman collection)
+                await axios.patch(`${API_BASE}/api/tasks/${id}/restore`, {
+                    version: parseInt(currentVersion)
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // After restore, switch to normal view to see the restored task
+                showDeleted = false;
+                document.getElementById('toggleDeletedText').textContent = 'Show Deleted';
+                document.getElementById('toggleDeletedBtn').classList.remove('btn-warning');
+                document.getElementById('toggleDeletedBtn').classList.add('btn-info');
+                loadTasks(currentPage);
+            } catch (error) {
+                if (error.response && error.response.status === 409) {
+                    alert('The task was updated by another user. Please refresh and try again.');
+                    if (showDeleted) {
+                        await loadDeletedTasks(currentPage);
+                    } else {
+                        await loadTasks(currentPage);
+                    }
+                } else {
+                    alert('Failed to restore task: ' + (error.response?.data?.message || error.response?.data?.error || error.message));
+                }
+            }
+        }
+
+        function applyFilters() {
+            if (showDeleted) {
+                loadDeletedTasks(1);
+            } else {
+                loadTasks(1);
+            }
+        }
+
+        function toggleDeletedView() {
+            if (showDeleted) {
+                // Switch back to normal view
+                showDeleted = false;
+                document.getElementById('toggleDeletedText').textContent = 'Show Deleted';
+                document.getElementById('toggleDeletedBtn').classList.remove('btn-warning');
+                document.getElementById('toggleDeletedBtn').classList.add('btn-info');
+                loadTasks(1);
+            } else {
+                // Switch to deleted view
+                showDeleted = true;
+                document.getElementById('toggleDeletedText').textContent = 'Show Active';
+                document.getElementById('toggleDeletedBtn').classList.remove('btn-info');
+                document.getElementById('toggleDeletedBtn').classList.add('btn-warning');
+                loadDeletedTasks(1);
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterPriority').value = '';
+            document.getElementById('filterAssignedTo').value = '';
+            document.getElementById('filterKeyword').value = '';
+            if (showDeleted) {
+                loadDeletedTasks(1);
+            } else {
+                loadTasks(1);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            // Convert yyyy-mm-dd to dd/mm/yyyy
+            const date = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
+            if (isNaN(date.getTime())) {
+                // If invalid date, try to parse as-is
+                return dateString;
+            }
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Form handlers
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            login();
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            register();
+        });
+    </script>
+</body>
+</html>
+

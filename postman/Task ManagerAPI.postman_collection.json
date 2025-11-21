@@ -1,0 +1,730 @@
+{
+	"info": {
+		"_postman_id": "02910328-ee05-40b8-b866-81f771d34ce3",
+		"name": "Task Manager API (Yii2)",
+		"description": "Postman collection for Yii2 Task Manager API running on ddev.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "631180"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 201 or 200', function () {",
+									"  pm.expect(pm.response.code).to.be.oneOf([200, 201, 422]);",
+									"});",
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"  var json = pm.response.json();",
+									"  if (json && json.access_token) {",
+									"    pm.collectionVariables.set('authToken', json.access_token);",
+									"  }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Admin\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"Secret123\",\n  \"role\": \"admin\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user and receive an access token."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200 or 401', function () {",
+									"  pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"  var json = pm.response.json();",
+									"  if (json && json.access_token) {",
+									"    pm.collectionVariables.set('authToken', json.access_token);",
+									"  }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login and obtain an access token."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout and invalidate the current token."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tags",
+			"item": [
+				{
+					"name": "List Tags",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tags",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tags"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Tag",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201 || pm.response.code === 200) {",
+									"  var json = pm.response.json();",
+									"  if (json && json.id) { pm.collectionVariables.set('tagId', json.id); }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"urgent\",\n  \"color\": \"#ff0000\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tags",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tags"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Tag",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"important\",\n  \"color\": \"#00ff00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tags/{{tagId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tags",
+								"{{tagId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Tag",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tags/{{tagId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tags",
+								"{{tagId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tasks",
+			"item": [
+				{
+					"name": "List Tasks (with filters)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks?status=pending&priority=high&tags=1,{{tagId}}&keyword=report&due_date_from=2025-01-01&due_date_to=2026-12-31&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending"
+								},
+								{
+									"key": "priority",
+									"value": "high"
+								},
+								{
+									"key": "tags",
+									"value": "1,{{tagId}}"
+								},
+								{
+									"key": "keyword",
+									"value": "report"
+								},
+								{
+									"key": "due_date_from",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "due_date_to",
+									"value": "2026-12-31"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Created', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201, 422]); });",
+									"var json = pm.response.json();",
+									"if (json && json.id) {",
+									"  pm.collectionVariables.set('taskId', json.id);",
+									"  if (json.version !== undefined) pm.collectionVariables.set('taskVersion', json.version);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Prepare quarterly report\",\n  \"description\": \"Compile and review metrics\",\n  \"priority\": \"high\",\n  \"due_date\": \"2026-01-15\",\n  \"assigned_to\": 1,\n  \"metadata\": {\n    \"source\": \"finance\",\n    \"confidential\": true\n  },\n  \"tag_ids\": [1, {{tagId}}]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "View Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json && json.version !== undefined) pm.collectionVariables.set('taskVersion', json.version);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks",
+								"{{taskId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Task (optimistic lock)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Get current taskVersion value",
+									"let currentVersion = pm.collectionVariables.get(\"taskVersion\") || pm.environment.get(\"taskVersion\") || pm.globals.get(\"taskVersion\");",
+									"",
+									"// Increment by 1",
+									"let newVersion = parseInt(currentVersion) + 1;",
+									"",
+									"// Set the updated value back to the same scope",
+									"if (pm.collectionVariables.get(\"taskVersion\") !== undefined) {",
+									"    pm.collectionVariables.set(\"taskVersion\", newVersion);",
+									"} else if (pm.environment.get(\"taskVersion\") !== undefined) {",
+									"    pm.environment.set(\"taskVersion\", newVersion);",
+									"} else if (pm.globals.get(\"taskVersion\") !== undefined) {",
+									"    pm.globals.set(\"taskVersion\", newVersion);",
+									"}",
+									"",
+									"console.log(\"taskVersion incremented from \" + currentVersion + \" to \" + newVersion);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Prepare Q4 report (updated)\",\n  \"version\": {{taskVersion}},\n  \"tag_ids\": [{{tagId}}]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks",
+								"{{taskId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Get current taskVersion value",
+									"let currentVersion = pm.collectionVariables.get(\"taskVersion\") || pm.environment.get(\"taskVersion\") || pm.globals.get(\"taskVersion\");",
+									"",
+									"// Increment by 1",
+									"let newVersion = parseInt(currentVersion) + 1;",
+									"",
+									"// Set the updated value back to the same scope",
+									"if (pm.collectionVariables.get(\"taskVersion\") !== undefined) {",
+									"    pm.collectionVariables.set(\"taskVersion\", newVersion);",
+									"} else if (pm.environment.get(\"taskVersion\") !== undefined) {",
+									"    pm.environment.set(\"taskVersion\", newVersion);",
+									"} else if (pm.globals.get(\"taskVersion\") !== undefined) {",
+									"    pm.globals.set(\"taskVersion\", newVersion);",
+									"}",
+									"",
+									"console.log(\"taskVersion incremented from \" + currentVersion + \" to \" + newVersion);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"version\":{{taskVersion}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks/{{taskId}}/toggle-status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks",
+								"{{taskId}}",
+								"toggle-status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Soft Delete Task",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Get current taskVersion value",
+									"let currentVersion = pm.collectionVariables.get(\"taskVersion\") || pm.environment.get(\"taskVersion\") || pm.globals.get(\"taskVersion\");",
+									"",
+									"// Increment by 1",
+									"let newVersion = parseInt(currentVersion) + 1;",
+									"",
+									"// Set the updated value back to the same scope",
+									"if (pm.collectionVariables.get(\"taskVersion\") !== undefined) {",
+									"    pm.collectionVariables.set(\"taskVersion\", newVersion);",
+									"} else if (pm.environment.get(\"taskVersion\") !== undefined) {",
+									"    pm.environment.set(\"taskVersion\", newVersion);",
+									"} else if (pm.globals.get(\"taskVersion\") !== undefined) {",
+									"    pm.globals.set(\"taskVersion\", newVersion);",
+									"}",
+									"",
+									"console.log(\"taskVersion incremented from \" + currentVersion + \" to \" + newVersion);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"version\": {{taskVersion}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks",
+								"{{taskId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Restore Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Get current taskVersion value",
+									"let currentVersion = pm.collectionVariables.get(\"taskVersion\") || pm.environment.get(\"taskVersion\") || pm.globals.get(\"taskVersion\");",
+									"",
+									"// Increment by 1",
+									"let newVersion = parseInt(currentVersion) + 1;",
+									"",
+									"// Set the updated value back to the same scope",
+									"if (pm.collectionVariables.get(\"taskVersion\") !== undefined) {",
+									"    pm.collectionVariables.set(\"taskVersion\", newVersion);",
+									"} else if (pm.environment.get(\"taskVersion\") !== undefined) {",
+									"    pm.environment.set(\"taskVersion\", newVersion);",
+									"} else if (pm.globals.get(\"taskVersion\") !== undefined) {",
+									"    pm.globals.set(\"taskVersion\", newVersion);",
+									"}",
+									"",
+									"console.log(\"taskVersion incremented from \" + currentVersion + \" to \" + newVersion);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"version\": {{taskVersion}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/tasks/{{taskId}}/restore",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"tasks",
+								"{{taskId}}",
+								"restore"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://rti-solution-yii2.ddev.site"
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "taskId",
+			"value": "1"
+		},
+		{
+			"key": "tagId",
+			"value": "1"
+		},
+		{
+			"key": "taskVersion",
+			"value": "0"
+		}
+	]
+}
